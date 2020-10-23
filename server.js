@@ -30,32 +30,48 @@ let getCurrentDate = () => {
     return date;
 }
 
-let str = "areaCode/ward1/"+ getCurrentDate();
-
-let usersRef = dbRef.child(str);
-
-usersRef.on("value",function(d){
-    let data = d.val();
-    let drivers = data.drivers;
-    let users = data.users;
-    for(var phoneNumber in drivers){
-        var driverDetails = drivers[phoneNumber];
-        if(driverDetails.status.status == "true" || driverDetails.status.status){
-          sendNotificationToUser(users, driverDetails.location.real_time);
-        }
-    }
+let wardsRef = dbRef.child("areas");
+wardsRef.once("value",function(data){
+  let wards = data.val();
+  for(let index = 0; index < wards.length; index++){
+    addListenerForNotif(wards[index].id);
+  }
 });
+
+function addListenerForNotif(areaCode) {
+  let str = "areaCode/"+ areaCode +"/"+ getCurrentDate();
+  let usersRef = dbRef.child(str);
+  usersRef.on("value",function(d){
+      let data = d.val();
+      if(!data) return;
+      let drivers = data.drivers;
+      let users = data.users;
+      for(var phoneNumber in drivers){
+          var driverDetails = drivers[phoneNumber];
+          if(driverDetails.status.status == "true" || driverDetails.status.status){
+            sendNotificationToUser({ ...users, areaCode }, driverDetails.location.real_time);
+          }
+      }
+  });
+}
 
 let sendNotificationToUser = async (users, latLong) => {
   let tokens = [];
   Object.values(users).map(user => {
-    if(user.userType == "driver") return;
+    if(!user.userType || user.userType == "driver") return;
+    if(!showNotifBasedOnTime(user.lastSentNotif)) return;
     let distance = distanceBetweenLatLong(user.latLong.lat, user.latLong.long, latLong.lat, latLong.long);
-    if(distance < 0.3)
+    if(distance < 0.3){
       tokens.push(user.token);
+      updateUserLastSentNotif(user, new Date().getTime())
+    }
   });
   sendOneSignalNotif(tokens);
 }
+
+let showNotifBasedOnTime = (lastSentNotif) => {
+    return !((Date.now() - lastSentNotif)/60000 < 120);
+} 
 
 let sendOneSignalNotif = tokens => {
   if(tokens.length > 0){
@@ -88,6 +104,13 @@ const distanceBetweenLatLong = (lat1, lon1, lat2, lon2)  => {
 function toRad(Value) 
 {
 	return Value * Math.PI / 180;
+}
+
+
+const updateUserLastSentNotif = (userInfo, lastSentNotif) => {
+  let str = 'areaCode/' + userInfo.areaCode + "/" + getCurrentDate() + "/users/" + userInfo.phoneNumber;
+  let usersRef = dbRef.child(str);
+  usersRef.update({lastSentNotif}).then(() => {}).catch(() => {})
 }
 
 app.get('/', (req, res) => {
