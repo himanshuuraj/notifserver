@@ -62,7 +62,9 @@ let sendOneSignalNotif = tokens => {
     var message = { 
       app_id: "930d0241-ea95-4276-bca9-abeff2c58260",
       contents: {"en": "Hi there is a garbage truck nearby you"},
-      include_player_ids: [ ...tokens ]
+      include_player_ids: [ ...tokens ],
+      android_sound: "notif",
+      existing_android_channel_id: "alertNotif"
     };
     SendNotification(message);
   }

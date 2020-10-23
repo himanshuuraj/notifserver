@@ -10,7 +10,6 @@ let SendNotification = function(data) {
       method: "POST",
       headers: headers
     };
-    console.log("XXXXX");
     var https = require('https');
     var req = https.request(options, function(res) {  
       res.on('data', function(data) {
