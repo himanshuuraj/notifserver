@@ -2,6 +2,8 @@ const SendNotification = require('./onesignalnotif');
 const express = require('express');
 const app = express()
 const port = 3000;
+const APP_ID = "930d0241-ea95-4276-bca9-abeff2c58260";
+const INTERVAL_BETWEEN_NOTIF = 120;
 var firebase = require("firebase");
 
 
@@ -70,13 +72,13 @@ let sendNotificationToUser = async (users, latLong) => {
 }
 
 let showNotifBasedOnTime = (lastSentNotif) => {
-    return !((Date.now() - lastSentNotif)/60000 < 120);
+    return !((Date.now() - lastSentNotif)/60000 < INTERVAL_BETWEEN_NOTIF);
 } 
 
 let sendOneSignalNotif = tokens => {
   if(tokens.length > 0){
     var message = { 
-      app_id: "930d0241-ea95-4276-bca9-abeff2c58260",
+      app_id: APP_ID,
       contents: {"en": "Hi there is a garbage truck nearby you"},
       include_player_ids: [ ...tokens ],
       android_sound: "notif",
