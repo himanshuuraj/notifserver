@@ -51,7 +51,11 @@ function addListenerForNotif(areaCode) {
       for(var phoneNumber in drivers){
           var driverDetails = drivers[phoneNumber];
           if(driverDetails.status.status == "true" || driverDetails.status.status){
-            sendNotificationToUser({ ...users, areaCode }, driverDetails.location.real_time);
+            if(driverDetails.location){
+              for(let key in users)
+                users[key]["areaCode"] = areaCode;
+              sendNotificationToUser(users, driverDetails.location.real_time);
+            }
           }
       }
   });
@@ -60,8 +64,8 @@ function addListenerForNotif(areaCode) {
 let sendNotificationToUser = async (users, latLong) => {
   let tokens = [];
   Object.values(users).map(user => {
-    if(!user.userType || user.userType == "driver") return;
-    if(!showNotifBasedOnTime(user.lastSentNotif)) return;
+    if(user.userType == "driver") return;
+    if(user.lastSentNotif && !showNotifBasedOnTime(user.lastSentNotif)) return;
     let distance = distanceBetweenLatLong(user.latLong.lat, user.latLong.long, latLong.lat, latLong.long);
     if(distance < 0.3){
       tokens.push(user.token);
@@ -72,7 +76,7 @@ let sendNotificationToUser = async (users, latLong) => {
 }
 
 let showNotifBasedOnTime = (lastSentNotif) => {
-    return !((Date.now() - lastSentNotif)/60000 < INTERVAL_BETWEEN_NOTIF);
+    return (Date.now() - lastSentNotif)/60000 > INTERVAL_BETWEEN_NOTIF;
 } 
 
 let sendOneSignalNotif = tokens => {
